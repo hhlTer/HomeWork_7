@@ -34,7 +34,7 @@ class Store {
         try {
             assert (file.createNewFile());
             String jsonThis = JSON.toJSONString(this);
-            saveToFile(file, jsonThis, true);
+            saveToFile(file, jsonThis);
             currentFile = file;
         } catch (IOException e) {
             e.printStackTrace();
@@ -53,7 +53,8 @@ class Store {
         Store temp = JSON.parseObject(s, Store.class);
         this.fruitsList.clear();
         this.fruitsList.addAll(temp.fruitsList);
-        moneyBalance = temp.moneyBalance;
+        moneyBalance = new BigDecimal(0);
+        moneyBalance = moneyBalance.add(temp.moneyBalance);
     }
 
     /**
@@ -96,6 +97,7 @@ class Store {
         File file = new File(patchToJsonFile);
         delivery = JSON.parseObject(loadJSON(file), Delivery.class);
         fruitsList.addAll(delivery.fruitsList);
+        System.out.println();
     }
 
     /**
@@ -199,13 +201,14 @@ class Store {
         while (scanner.hasNext()){
             sb.append(scanner.nextLine());
         }
+        scanner.close();
         return String.valueOf(sb);
     }
 
 
-    private void saveToFile(File file, String string, boolean append){
+    private void saveToFile(File file, String string){
         try {
-            FileOutputStream fos = append? new FileOutputStream(file, append) : new FileOutputStream(file);
+            FileOutputStream fos = new FileOutputStream(file);
             byte[] byteString = string.getBytes();
             fos.write(byteString);
             fos.flush();
@@ -223,7 +226,7 @@ class Store {
             while (scanner.hasNext()) {
                 sb.append(scanner.nextLine());
             }
-            saveToFile(bakFile, String.valueOf(sb), false);
+            saveToFile(bakFile, String.valueOf(sb));
             scanner.close();
         } catch (IOException e) {
             e.printStackTrace();

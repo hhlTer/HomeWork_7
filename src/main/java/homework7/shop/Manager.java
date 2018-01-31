@@ -2,67 +2,92 @@ package homework7.shop;
 
 import com.alibaba.fastjson.JSON;
 
+import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 public class Manager {
     public static void main(String[] args) throws FileNotFoundException {
+//        fillAllFiles();
         Store store = new Store();
-        Fruits fruits;
-
+        store.load("store1.dat");
+        store.sell("order.dat");
+    }
+    static List<Fruits> countOfAvailableFruit(File file, Date date, KindOfFruit type) throws FileNotFoundException{
+        Store store = new Store();
+        store.load(file.getName());
+//        Date date = new Date();
+//        date = new Date(date.getTime() + (24*60*60*1000*50));
+        List<Fruits> list = store.getAvailableFruits(date, KindOfFruit.APPLE);
+        return list;
+    }
+    static void fillAllFiles() throws FileNotFoundException{
+//============================================================
+        Store store1 = new Store();
+        Store store2 = new Store();
 /**
- *       create random delivery.
+ *        create random delivery.
  *        Date - current day
  *        left time - random of 20 day
  *        price - random of 50
  */
 //---------------------1--------------------------------------
-//        Delivery delivery = newDelivery();
-//        File file = new File("randomDelivery.dat");
-//        saveDelivery(file, delivery);
-//------------------------------------------------------------
+        Delivery delivery = newDelivery();
+        File file = new File("randomDelivery.dat");
+        saveDelivery(file, delivery);
 
+        delivery = newDelivery();
+        file = new File("randomDelivery2.dat");
+        saveDelivery(file, delivery);
+//------------------------------------------------------------
 /**
  *        add delivery to file store.dat
  */
-//---------------------2--------------------------------------
-//        store.addFruits(file.getName());
-//        store.save("store.dat");
-//------------------------------------------------------------
+ //---------------------2--------------------------------------
+        store1.addFruits(file.getName());
+        store1.save("store1.dat");
 
+        store2.addFruits(file.getName());
+        store2.save("store2.dat");
+//-------------------------------------------------------------
 /**
  *        load from store.dat to Store class (fruitList)
  */
-//---------------------3--------------------------------------
-//        store.load("store.dat");
 //------------------------------------------------------------
-
+//---------------------3--------------------------------------
+        store1.load("store1.dat");
+        store2.load("store2.dat");
+//------------------------------------------------------------
 /**
  *          create order file (order.dat)
  */
-//---------------------4--------------------------------------
-//    addClients();
 //------------------------------------------------------------
-
+//---------------------4--------------------------------------
+        addClients("order1.dat");
+        addClients("order2.dat");
+//------------------------------------------------------------
 /**
  *        sell (using file clientGroup.dat)
  */
-//---------------------5--------------------------------------
-//        store.sell("clientGroup.dat");
 //------------------------------------------------------------
+//---------------------5--------------------------------------
+        store1.sell("order1.dat");
+        store2.sell("order2.dat");
+//------------------------------------------------------------
+        System.out.println();
+    }
 
-}
-
-    static void saveDelivery(File file, Delivery del){
+    private static void saveDelivery(File file, Delivery del){
         String s = JSON.toJSONString(del);
         try {
             FileOutputStream fos = new FileOutputStream(file);
-            file.createNewFile();
+            assert file.createNewFile();
             byte[] b = s.getBytes();
             fos.write(b);
             fos.flush();
@@ -72,7 +97,7 @@ public class Manager {
         }
     }
 
-    static Delivery newDelivery(){
+    private static Delivery newDelivery(){
         Delivery delivery = new Delivery();
         Fruits fruits;
         Random random = new Random();
@@ -87,39 +112,27 @@ public class Manager {
         return delivery;
     }
 
-    static void addClients(){
+    private static void addClients(String orderFile){
         ClientGroup clientGroup = new ClientGroup();
-        Order order = new Order();
-        order.name = "Sasha";
-        order.type = KindOfFruit.APPLE;
-        order.count = 22;
-        clientGroup.addClient(order);
+        Random random = new Random();
+        int countOfCustomers = random.nextInt(5);
+        Order order;
 
-        order = new Order();
-        order.name = "Valeryi";
-        order.type = KindOfFruit.PEAR;
-        order.count = 13;
-        clientGroup.addClient(order);
-
-        order = new Order();
-        order.name = "Olena";
-        order.type = KindOfFruit.BANANAS;
-        order.count = 20;
-        clientGroup.addClient(order);
-
-        String j = JSON.toJSONString(clientGroup);
-        File file = new File("order.dat");
-        try {
-            FileOutputStream fos = new FileOutputStream(file);
-            byte[] b = j.getBytes();
-            fos.write(b);
-            fos.flush();
-            fos.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        for (int i = 0; i < countOfCustomers; i++) {
+            order = new Order();
+            order.name = "Customer #"+(i+1);
+            order.type = KindOfFruit.values()[random.nextInt(KindOfFruit.values().length)];
+            order.count = random.nextInt(50);
+            clientGroup.addClient(order);
         }
 
+        String j = JSON.toJSONString(clientGroup);
+        File file = new File(orderFile);
+        try {
+            ServiceShop.saveJSONtoFile(j, file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
+
 }
