@@ -1,8 +1,10 @@
 package homework7.shop;
 
 import com.alibaba.fastjson.JSON;
+import homework7.cucl.Customers;
+import homework7.cucl.Delivery;
+import homework7.cucl.KindOfFruit;
 
-import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -14,19 +16,38 @@ import java.util.Random;
 
 public class Manager {
     public static void main(String[] args) throws FileNotFoundException {
-//        fillAllFiles();
-        Store store = new Store();
-        store.load("store1.dat");
-        store.sell("order.dat");
+        fillAllFiles();
+
     }
-    static List<Fruits> countOfAvailableFruit(File file, Date date, KindOfFruit type) throws FileNotFoundException{
+    static List<Delivery.Fruits> countOfAvailableFruit(File file, Date date, KindOfFruit type) throws FileNotFoundException{
         Store store = new Store();
         store.load(file.getName());
 //        Date date = new Date();
 //        date = new Date(date.getTime() + (24*60*60*1000*50));
-        List<Fruits> list = store.getAvailableFruits(date, KindOfFruit.APPLE);
+        List<Delivery.Fruits> list = store.getAvailableFruits(date, KindOfFruit.APPLE);
         return list;
     }
+
+    /** fillAllFiles():
+     ** create and fill:
+     *      store1.dat
+     *      store2.dat : Contain JSON with data of shop - ArrayList<Fruits> + moneyBalance
+     *
+     *      randomDelivery1.dat : for store1
+     *      randomDelivery2.dat : for store2. Contain JSON with deliver of fruit - ArrayList<Fruits>
+     *          (using for fill stores in save(String patchFile) method)
+     *
+     *      order1.dat : for store1
+     *      order2.dat : for store2. Contain JSON with customers - ArrayList<Order>
+     *          (using in sell(String orderFile) method)
+     *
+     ** Performs sale for store1 and store2 and rewrites store1.dat and store2.dat with new data (order SUBTRACT shop)
+     *  (uses sell(String orderFileName) method.
+     *  +++ old Store.dat files are saves in .bak files
+     *  +++ If the store does not have enough fruit for ordering - a message with information is displayed.
+     *
+     * @throws FileNotFoundException
+     */
     static void fillAllFiles() throws FileNotFoundException{
 //============================================================
         Store store1 = new Store();
@@ -39,7 +60,7 @@ public class Manager {
  */
 //---------------------1--------------------------------------
         Delivery delivery = newDelivery();
-        File file = new File("randomDelivery.dat");
+        File file = new File("randomDelivery1.dat");
         saveDelivery(file, delivery);
 
         delivery = newDelivery();
@@ -99,10 +120,10 @@ public class Manager {
 
     private static Delivery newDelivery(){
         Delivery delivery = new Delivery();
-        Fruits fruits;
+        Delivery.Fruits fruits;
         Random random = new Random();
         for (int i = 0; i < 200; i++) {
-            fruits = new Fruits();
+            fruits = new Delivery.Fruits();
             fruits.date = new Date();
             fruits.type = KindOfFruit.values()[random.nextInt(KindOfFruit.values().length)];
             fruits.shelfLife = random.nextInt(20);
@@ -113,13 +134,13 @@ public class Manager {
     }
 
     private static void addClients(String orderFile){
-        ClientGroup clientGroup = new ClientGroup();
+        Customers clientGroup = new Customers();
         Random random = new Random();
         int countOfCustomers = random.nextInt(5);
-        Order order;
+        Customers.Order order;
 
         for (int i = 0; i < countOfCustomers; i++) {
-            order = new Order();
+            order = new Customers.Order();
             order.name = "Customer #"+(i+1);
             order.type = KindOfFruit.values()[random.nextInt(KindOfFruit.values().length)];
             order.count = random.nextInt(50);

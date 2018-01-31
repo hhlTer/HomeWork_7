@@ -1,4 +1,4 @@
-package homework7.shop;
+package homework7.cucl;
 
 public enum KindOfFruit {
     BANANAS, LEMON, BLACKBERRY, APPLE, PEACH,

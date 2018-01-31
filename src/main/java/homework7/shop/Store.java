@@ -1,6 +1,9 @@
 package homework7.shop;
 
 import com.alibaba.fastjson.JSON;
+import homework7.cucl.Customers;
+import homework7.cucl.Delivery;
+import homework7.cucl.KindOfFruit;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -15,7 +18,7 @@ class Store {
      *              Записується в файл методом save(String patchFile)
      */
     private Delivery delivery = new Delivery();
-    public List<Fruits> fruitsList = new ArrayList<>();
+    public List<Delivery.Fruits> fruitsList = new ArrayList<>();
     public BigDecimal moneyBalance = new BigDecimal(0);
 
 
@@ -66,11 +69,11 @@ class Store {
     void sell(String pathToJsonFile) throws FileNotFoundException{
         File file = new File(pathToJsonFile);
         String jsonGroup = loadJSON(file);
-        ClientGroup group;
-        group = JSON.parseObject(jsonGroup, ClientGroup.class);
-        for (Order c:
+        Customers group;
+        group = JSON.parseObject(jsonGroup, Customers.class);
+        for (Customers.Order c:
              group.orderList) {
-            List<Fruits> fruits = getAvailableFruits(new Date(), c.type);
+            List<Delivery.Fruits> fruits = getAvailableFruits(new Date(), c.type);
             if (fruits.size() <= c.count) {
                 System.out.printf("Для замолення %s - %d %s не вистачає товару. Кількість на складі = %d\n" +
                                 "замовлення відхилено\n",
@@ -78,7 +81,7 @@ class Store {
                 continue;
             }
             int count = c.count;
-            for (Fruits f:
+            for (Delivery.Fruits f:
                  fruits) {
                 moneyBalance = moneyBalance.add(f.price);
                 fruitsList.remove(f);
@@ -106,18 +109,18 @@ class Store {
      * getAvailableFruits -
      * @return all fruit, with available using before date
      */
-    public List<Fruits> getSpoiledFruits(Date date){
-        List<Fruits> temp = new ArrayList<>();
-        for (Fruits f:
+    public List<Delivery.Fruits> getSpoiledFruits(Date date){
+        List<Delivery.Fruits> temp = new ArrayList<>();
+        for (Delivery.Fruits f:
                 fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.before(date)) temp.add(f);
         }
         return temp;
     }
-    public List<Fruits> getSpoiledFruits(Date date, KindOfFruit type){
-        List<Fruits> temp = new ArrayList<>();
-        for (Fruits f:
+    public List<Delivery.Fruits> getSpoiledFruits(Date date, KindOfFruit type){
+        List<Delivery.Fruits> temp = new ArrayList<>();
+        for (Delivery.Fruits f:
                 fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.before(date) & f.type == type) temp.add(f);
@@ -125,18 +128,18 @@ class Store {
         return temp;
     }
 
-    public List<Fruits> getAvailableFruits(Date date){
-        List<Fruits> temp = new ArrayList<>();
-        for (Fruits f:
+    public List<Delivery.Fruits> getAvailableFruits(Date date){
+        List<Delivery.Fruits> temp = new ArrayList<>();
+        for (Delivery.Fruits f:
              fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.after(date)) temp.add(f);
         }
         return temp;
     }
-    public List<Fruits> getAvailableFruits(Date date, KindOfFruit type){
-        List<Fruits> temp = new ArrayList<>();
-        for (Fruits f:
+    public List<Delivery.Fruits> getAvailableFruits(Date date, KindOfFruit type){
+        List<Delivery.Fruits> temp = new ArrayList<>();
+        for (Delivery.Fruits f:
              fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.after(date) & f.type == type) temp.add(f);
@@ -144,18 +147,18 @@ class Store {
         return temp;
     }
 
-    public List<Fruits> getAddedFruits(Date date){
-        List<Fruits> temp = new ArrayList<>();
-        for (Fruits f:
+    public List<Delivery.Fruits> getAddedFruits(Date date){
+        List<Delivery.Fruits> temp = new ArrayList<>();
+        for (Delivery.Fruits f:
              fruitsList) {
             if (f.date.getDate() == date.getDate())
                 temp.add(f);
         }
         return temp;
     }
-    public List<Fruits> getAddedFruits(Date date, Fruits fruits){
-        List<Fruits> temp = new ArrayList<>();
-        for (Fruits f:
+    public List<Delivery.Fruits> getAddedFruits(Date date, Delivery.Fruits fruits){
+        List<Delivery.Fruits> temp = new ArrayList<>();
+        for (Delivery.Fruits f:
              fruitsList) {
             if (f.date.getDate() == date.getDate() & f.type == fruits.type)
                 temp.add(f);
@@ -168,7 +171,7 @@ class Store {
      * @param fruits
      */
 
-    public void addToStore(Fruits fruits){
+    public void addToStore(Delivery.Fruits fruits){
         fruitsList.add(fruits);
     }
 
@@ -176,7 +179,7 @@ class Store {
      * add fruits to Delivery
      * @param fruits
      */
-    void addFruitsToDelivery(Fruits fruits){
+    void addFruitsToDelivery(Delivery.Fruits fruits){
         delivery.addDelivery(fruits);
     }
 
@@ -235,13 +238,3 @@ class Store {
 
 }
 
-class Delivery {
-    public List<Fruits> fruitsList = new ArrayList<>();
-    public void addDelivery(Fruits fruits){
-        fruitsList.add(fruits);
-    }
-}
-class ClientGroup{
-    public List<Order> orderList = new ArrayList<>();
-    public void addClient(Order client){ orderList.add(client);}
-}
