@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import homework7.cucl.CompanyDB;
 import homework7.cucl.Fruits;
 import homework7.cucl.KindOfFruit;
+import homework7.cucl.StoreDB;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -13,10 +14,24 @@ import java.util.Date;
 import java.util.List;
 
 public class Companyes {
-    private List<Store> storesList = new ArrayList<>();
+//    private List<Store> storesList = new ArrayList<>();
+    private List<StoreDB> storeDBList = new ArrayList<>();
     private BigDecimal companyBalances = new BigDecimal(0);
     private File currentFile;
     private CompanyDB companyDB = new CompanyDB();
+
+
+    /**
+     * !!!
+     * copy moneyBalance, storeDBList from CompanyDB to this.companyBalance and this.storeDBList
+     * @param companyDB
+     */
+    private void fillThis(CompanyDB companyDB){
+        storeDBList = new ArrayList<>(companyDB.storeList);
+
+        companyBalances = new BigDecimal(0);
+        companyBalances = companyBalances.add(companyDB.moneyBalance);
+    }
 
     /**
      * addStore(File storeFile)
@@ -26,15 +41,16 @@ public class Companyes {
     public void addStore(File storeFile){
         try {
             String jsonStore = ServiceShop.loadFromFileToJSONString(storeFile);
-            Store store = JSON.parseObject(jsonStore, Store.class);
-            companyDB.storeList.add(store);
-            companyDB.moneyBalance = companyDB.moneyBalance.add(store.moneyBalance);
+            StoreDB storeDB = JSON.parseObject(jsonStore, StoreDB.class);
+            companyDB.storeList.add(storeDB);
+            companyDB.moneyBalance = companyDB.moneyBalance.add(storeDB.moneyBalance);
 //            String thisString = JSON.toJSONString(this);
 //            if (currentFile == null) currentFile = new File("tempCompany.dat");
 //            ServiceShop.saveJSONtoFile(thisString, currentFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+        fillThis(companyDB);
     }
 
     /**
@@ -53,12 +69,13 @@ public class Companyes {
         File file = new File(companyFile);
         try {
             String JSONstring = ServiceShop.loadFromFileToJSONString(file);
-            CompanyDB c = JSON.parseObject(JSONstring, CompanyDB.class);
-            companyDB.storeList.clear();
-            companyDB.storeList.addAll(c.storeList);
+            CompanyDB cDB = JSON.parseObject(JSONstring, CompanyDB.class);
+            companyDB.storeList = new ArrayList<>(cDB.storeList);
+
             companyDB.moneyBalance = new BigDecimal(0);
-            companyDB.moneyBalance = companyDB.moneyBalance.add(c.moneyBalance);
+            companyDB.moneyBalance = companyDB.moneyBalance.add(cDB.moneyBalance);
             currentFile = new File(companyFile);
+            fillThis(companyDB);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -68,7 +85,11 @@ public class Companyes {
      * @return store as index
      */
     public Store getStore(int index) {
-        return companyDB.storeList.get(index);
+        Store store = new Store();
+        StoreDB storeDB = companyDB.storeList.get(index);
+        store.setFruitsList(storeDB.fruitsList);
+        store.setMoneyBalance(storeDB.moneyBalance);
+        return store;
     }
 
     /**
@@ -78,68 +99,81 @@ public class Companyes {
         setMoneyBalance();
         return companyDB.moneyBalance;
     }
+
     private void setMoneyBalance(){
         companyDB.moneyBalance = new BigDecimal(0);
-        for (Store s:
+        for (StoreDB s:
              companyDB.storeList) {
             companyDB.moneyBalance = companyDB.moneyBalance.add(s.moneyBalance);
         }
+        fillThis(companyDB);
     }
 
-    List<Fruits> getSpoiledFruits(Date date){
+    private final int ONE_DAY = 24*60*60*1000;
+
+    public List<Fruits> getSpoiledFruits(Date date){
         List<Fruits> getList = new ArrayList<>();
-        for (Store s:
+        for (StoreDB s:
              companyDB.storeList) {
-            getList.addAll(s.getSpoiledFruits(date));
+            for (Fruits f:
+                 s.fruitsList) {
+                if (date.after(new Date(f.date.getTime() + ONE_DAY*f.shelfLife)))
+                    getList.add(f);
+            }
         }
         return getList;
     }
 
-    List<Fruits> getSpoiledFruits(Date date, KindOfFruit type){
+    public List<Fruits> getSpoiledFruits(Date date, KindOfFruit type){
         List<Fruits> getList = new ArrayList<>();
-        for (Store s:
-                companyDB.storeList) {
-            getList.addAll(s.getSpoiledFruits(date, type));
+        for (Fruits f:
+                getSpoiledFruits(date)) {
+            if (f.type == type) getList.add(f);
         }
         return getList;
     }
 
     List<Fruits> getAvailableFruits(Date date){
         List<Fruits> getList = new ArrayList<>();
-        for (Store s:
+        for (StoreDB s:
                 companyDB.storeList) {
-            getList.addAll(s.getAvailableFruits(date));
+            for (Fruits f:
+                    s.fruitsList) {
+                if (date.before(new Date(f.date.getTime() + ONE_DAY*f.shelfLife)))
+                    getList.add(f);
+            }
         }
         return getList;
     }
 
     List<Fruits> getAvailableFruits(Date date, KindOfFruit type){
         List<Fruits> getList = new ArrayList<>();
-        for (Store s:
-                companyDB.storeList) {
-            getList.addAll(s.getAvailableFruits(date, type));
+        for (Fruits f:
+                getAvailableFruits(date)) {
+            if (f.type == type) getList.add(f);
         }
         return getList;
     }
 
     List<Fruits> getAddedFruits(Date date){
         List<Fruits> getList = new ArrayList<>();
-        for (Store s:
+        for (StoreDB s:
                 companyDB.storeList) {
-            getList.addAll(s.getAddedFruits(date));
+            for (Fruits f:
+                    s.fruitsList) {
+                if (date.getDate() == f.date.getDate())
+                    getList.add(f);
+            }
         }
         return getList;
     }
 
     List<Fruits> getAddedFruits(Date date, KindOfFruit type){
         List<Fruits> getList = new ArrayList<>();
-        for (Store s:
-                companyDB.storeList) {
-            getList.addAll(s.getAddedFruits(date, type));
+        for (Fruits f:
+                getAddedFruits(date)) {
+            if (f.type == type) getList.add(f);
         }
         return getList;
     }
-
-
-
 }

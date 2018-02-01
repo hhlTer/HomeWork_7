@@ -27,7 +27,7 @@ public class Fruits {
     public String toString(){
         Date a = new Date(date.getTime() + (24*60*60*1000*shelfLife));
 //        Calendar c = Calendar.getInstance();
-        return String.format("%s, delivery date %s, expiration day %s, price %s",
+        return String.format("%s, delivery date %s, expiration day %s, price %s\n",
                 type, date.getDate() + "." + date.getMonth()+1,
                       a.getDate() + "." + a.getMonth()+1, price);
     }

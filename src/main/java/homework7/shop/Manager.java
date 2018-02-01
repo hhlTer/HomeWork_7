@@ -1,10 +1,7 @@
 package homework7.shop;
 
 import com.alibaba.fastjson.JSON;
-import homework7.cucl.Customers;
-import homework7.cucl.Delivery;
-import homework7.cucl.Fruits;
-import homework7.cucl.KindOfFruit;
+import homework7.cucl.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,9 +13,10 @@ import java.util.List;
 import java.util.Random;
 
 public class Manager {
+    private static final int ONE_DAY = 24*60*60*1000;
     public static void main(String[] args) throws FileNotFoundException {
-//        testStore();
-        testCompany();
+//        testStore();      //1
+//        testCompany();    //2
     }
     static void testCompany(){
         Companyes companyes = new Companyes();
@@ -30,15 +28,20 @@ public class Manager {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+
+        //------------------------------------------------------------------
+        System.out.println("Company balance: " + companyes.getCompanyBalance());
 //------------------------------------------------------------------
         Store store = companyes.getStore(0);
         Date date = new Date();
-        date = new Date(date.getTime() + (24*60*60*1000*10));
-        System.out.println(store.getSpoiledFruits(date, KindOfFruit.APPLE).size());
+        date = new Date(date.getTime() + (ONE_DAY*10));
+        System.out.println("Spoiled apple count in store #1 after " + date + " date " +
+                store.getSpoiledFruits(date, KindOfFruit.APPLE).size());
 //------------------------------------------------------------------
-        System.out.println(companyes.getCompanyBalance());
+        System.out.println("Available apple count in company before " + date + " date " +
+                companyes.getSpoiledFruits(date, KindOfFruit.APPLE).size());
 //------------------------------------------------------------------
-        System.out.println(companyes.getSpoiledFruits(date, KindOfFruit.APPLE).size());
+
     }
     static List<Fruits> countOfAvailableFruit(File file, Date date, KindOfFruit type) throws FileNotFoundException{
         Store store = new Store();
@@ -92,10 +95,10 @@ public class Manager {
  *        add delivery to file store.dat
  */
  //---------------------2--------------------------------------
-        store1.addFruits(file.getName());
+        store1.addFruits("randomDelivery1.dat");
         store1.save("store1.dat");
 
-        store2.addFruits(file.getName());
+        store2.addFruits("randomDelivery2.dat");
         store2.save("store2.dat");
 //-------------------------------------------------------------
 /**
@@ -123,6 +126,14 @@ public class Manager {
         store2.sell("order2.dat");
 //------------------------------------------------------------
         System.out.println();
+
+
+        System.out.println("Added today Bananas store1:\n" + store1.getAddedFruits(new Date(), KindOfFruit.BANANAS));
+        Date date = new Date(new Date().getTime() + (ONE_DAY*5));
+        System.out.println("Available before" + date
+                + "  Bananas store1:" + store1.getAvailableFruits(date, KindOfFruit.BANANAS));
+        System.out.println("Spoiled after" + date
+                + "  Bananas store1:" + store1.getSpoiledFruits(date, KindOfFruit.BANANAS));
     }
 
     private static void saveDelivery(File file, Delivery del){
@@ -157,7 +168,7 @@ public class Manager {
     private static void addClients(String orderFile){
         Customers clientGroup = new Customers();
         Random random = new Random();
-        int countOfCustomers = random.nextInt(5);
+        int countOfCustomers = random.nextInt(4) + 1;
         Customers.Order order;
 
         for (int i = 0; i < countOfCustomers; i++) {

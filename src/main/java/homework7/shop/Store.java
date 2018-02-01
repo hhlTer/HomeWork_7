@@ -1,10 +1,7 @@
 package homework7.shop;
 
 import com.alibaba.fastjson.JSON;
-import homework7.cucl.Customers;
-import homework7.cucl.Delivery;
-import homework7.cucl.Fruits;
-import homework7.cucl.KindOfFruit;
+import homework7.cucl.*;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -19,9 +16,9 @@ public class Store {
      *              Записується в файл методом save(String patchFile)
      */
     private Delivery delivery = new Delivery();
-    public List<Fruits> fruitsList = new ArrayList<>();
-    public BigDecimal moneyBalance = new BigDecimal(0);
-
+    private List<Fruits> fruitsList = new ArrayList<>();
+    private BigDecimal moneyBalance = new BigDecimal(0);
+    private StoreDB storeDB;
 
     /**
      * @param stringFile - шлях до файлу, в який завантажується JSON поточного класу shop,
@@ -44,8 +41,8 @@ public class Store {
 //            e.printStackTrace();
 //        }
         try {
-            String jsonThis = JSON.toJSONString(this);
-            ServiceShop.saveJSONtoFile(jsonThis, file);
+            String jsonStoreDB = JSON.toJSONString(storeDB);
+            ServiceShop.saveJSONtoFile(jsonStoreDB, file);
             currentFile = file;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -60,13 +57,17 @@ public class Store {
 
     public void load(String storeFile) throws FileNotFoundException{
         File file = new File(storeFile);
-        currentFile = file;
+        currentFile = new File(file.getName());
         String s = loadJSON(file);
-        Store temp = JSON.parseObject(s, Store.class);
-        this.fruitsList.clear();
-        this.fruitsList.addAll(temp.fruitsList);
-        moneyBalance = new BigDecimal(0);
-        moneyBalance = moneyBalance.add(temp.moneyBalance);
+        StoreDB temp = JSON.parseObject(s, StoreDB.class);
+
+        storeDB.fruitsList = new ArrayList<>(temp.fruitsList);
+
+        storeDB.moneyBalance = new BigDecimal(0);
+        storeDB.moneyBalance = storeDB.moneyBalance.add(temp.moneyBalance);
+
+        fillThis(storeDB);
+
         currentFile = new File(storeFile);
     }
 
@@ -77,6 +78,7 @@ public class Store {
      * @throws FileNotFoundException
      */
     void sell(String pathToJsonFile) throws FileNotFoundException{
+        StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
         File file = new File(pathToJsonFile);
         String jsonGroup = loadJSON(file);
         Customers group;
@@ -85,20 +87,20 @@ public class Store {
              group.orderList) {
             List<Fruits> fruits = getAvailableFruits(new Date(), c.type);
             if (fruits.size() <= c.count) {
-                System.out.printf("Для замолення %s - %d %s не вистачає товару. Кількість на складі = %d\n" +
-                                "замовлення відхилено\n",
-                        c.name, c.count, c.type, fruits.size());
+                System.out.printf("Для замолення %s з %s- %d %s не вистачає товару. Кількість на складі = %d\n" +
+                                "замовлення відхилено. %s\n",
+                        c.name, pathToJsonFile, c.count, c.type, (fruits.size()+1), currentFile.getName());
                 continue;
             }
             int count = c.count;
             for (Fruits f:
                  fruits) {
-                moneyBalance = moneyBalance.add(f.price);
-                fruitsList.remove(f);
+                storeDB.moneyBalance = storeDB.moneyBalance.add(f.price);
+                storeDB.fruitsList.remove(f);
                 if (--count == 0) break;
             }
-
         }
+        fillThis(storeDB);
         save(this.currentFile.getName());
     }
     /**
@@ -109,8 +111,14 @@ public class Store {
     public void addFruits(String patchToJsonFile) throws FileNotFoundException{
         File file = new File(patchToJsonFile);
         delivery = JSON.parseObject(loadJSON(file), Delivery.class);
-        fruitsList.addAll(delivery.fruitsList);
-        System.out.println();
+        try {
+            storeDB.fruitsList.addAll(delivery.fruitsList);
+        } catch (Exception e) {
+            storeDB = new StoreDB();
+            storeDB.fruitsList = new ArrayList<>();
+            storeDB.fruitsList.addAll(delivery.fruitsList);
+        }
+        fillThis(storeDB);
     }
 
     /**
@@ -131,9 +139,8 @@ public class Store {
     public List<Fruits> getSpoiledFruits(Date date, KindOfFruit type){
         List<Fruits> temp = new ArrayList<>();
         for (Fruits f:
-                fruitsList) {
-            Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
-            if (a.before(date) & f.type == type) temp.add(f);
+                getSpoiledFruits(date)) {
+            if (f.type == type) temp.add(f);
         }
         return temp;
     }
@@ -141,7 +148,7 @@ public class Store {
     public List<Fruits> getAvailableFruits(Date date){
         List<Fruits> temp = new ArrayList<>();
         for (Fruits f:
-             fruitsList) {
+             this.fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.after(date)) temp.add(f);
         }
@@ -150,9 +157,8 @@ public class Store {
     public List<Fruits> getAvailableFruits(Date date, KindOfFruit type){
         List<Fruits> temp = new ArrayList<>();
         for (Fruits f:
-             fruitsList) {
-            Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
-            if (a.after(date) & f.type == type) temp.add(f);
+             getAvailableFruits(date)) {
+            if (f.type == type) temp.add(f);
         }
         return temp;
     }
@@ -170,8 +176,8 @@ public class Store {
     public List<Fruits> getAddedFruits(Date date, KindOfFruit type){
         List<Fruits> temp = new ArrayList<>();
         for (Fruits f:
-             fruitsList) {
-            if (f.date.getDate() == date.getDate() & f.type == type)
+             getAddedFruits(date)) {
+            if (f.type == type)
                 temp.add(f);
         }
         return temp;
@@ -219,33 +225,24 @@ public class Store {
         return String.valueOf(sb);
     }
 
+    List<Fruits> getFruitsList(){
+        return fruitsList;
+    }
 
-//    private void saveToFile(File file, String string){
-//        try {
-//            FileOutputStream fos = new FileOutputStream(file);
-//            byte[] byteString = string.getBytes();
-//            fos.write(byteString);
-//            fos.flush();
-//            fos.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//    private void copyBakFile(File file){
-//        File bakFile = new File(file.getName() + ".bak");
-//        try {
-//            assert (bakFile.createNewFile());
-//            Scanner scanner = new Scanner(new FileInputStream(file));
-//            StringBuilder sb = new StringBuilder();
-//            while (scanner.hasNext()) {
-//                sb.append(scanner.nextLine());
-//            }
-//            saveToFile(bakFile, String.valueOf(sb));
-//            scanner.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    void setFruitsList(List<Fruits> fruitsList){
+        this.fruitsList = new ArrayList<>(fruitsList);
+    }
 
+    void setMoneyBalance(BigDecimal moneyBalance){
+        this.moneyBalance = new BigDecimal(moneyBalance.doubleValue());
+    }
+
+
+    private void fillThis(StoreDB storeDB){
+        this.moneyBalance = new BigDecimal(0);
+        this.moneyBalance = moneyBalance.add(storeDB.moneyBalance);
+
+        this.fruitsList = new ArrayList<>(storeDB.fruitsList);
+    }
 }
 
