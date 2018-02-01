@@ -10,7 +10,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
 
-class Store {
+public class Store {
     /**
      * @Delivery - поточна(остання) поставка фруктів.
      *             При виклику метода addFruits(String patchFile) фрукти з файлу поставки заносяться в @fruitList
