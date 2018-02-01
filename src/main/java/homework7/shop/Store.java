@@ -3,6 +3,7 @@ package homework7.shop;
 import com.alibaba.fastjson.JSON;
 import homework7.cucl.Customers;
 import homework7.cucl.Delivery;
+import homework7.cucl.Fruits;
 import homework7.cucl.KindOfFruit;
 
 import java.io.*;
@@ -18,7 +19,7 @@ class Store {
      *              Записується в файл методом save(String patchFile)
      */
     private Delivery delivery = new Delivery();
-    public List<Delivery.Fruits> fruitsList = new ArrayList<>();
+    public List<Fruits> fruitsList = new ArrayList<>();
     public BigDecimal moneyBalance = new BigDecimal(0);
 
 
@@ -29,28 +30,36 @@ class Store {
      *                    головний файл складу
      */
     private File currentFile;
-    public void save(String stringFile) {
-        File file = new File(stringFile);
-        if (file.exists()) {
-            copyBakFile(file);
-        }
+    public void save(String storeFile) {
+        File file = new File(storeFile);
+//        if (file.exists()) {
+//            copyBakFile(file);
+//        }
+//        try {
+//            assert (file.createNewFile());
+//            String jsonThis = JSON.toJSONString(this);
+//            saveToFile(file, jsonThis);
+//            currentFile = file;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         try {
-            assert (file.createNewFile());
             String jsonThis = JSON.toJSONString(this);
-            saveToFile(file, jsonThis);
+            ServiceShop.saveJSONtoFile(jsonThis, file);
             currentFile = file;
-        } catch (IOException e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+//
     }
 
     /**
-     * @param patchToJsonFile - шлях до файлу, з якого завантажується (перезавантажується) весь склад (fruitList).
+     * @param storeFile - шлях до файлу, з якого завантажується (перезавантажується) весь склад (fruitList) + moneyBalances.
      * @throws FileNotFoundException
      */
 
-    public void load(String patchToJsonFile) throws FileNotFoundException{
-        File file = new File(patchToJsonFile);
+    public void load(String storeFile) throws FileNotFoundException{
+        File file = new File(storeFile);
         currentFile = file;
         String s = loadJSON(file);
         Store temp = JSON.parseObject(s, Store.class);
@@ -58,6 +67,7 @@ class Store {
         this.fruitsList.addAll(temp.fruitsList);
         moneyBalance = new BigDecimal(0);
         moneyBalance = moneyBalance.add(temp.moneyBalance);
+        currentFile = new File(storeFile);
     }
 
     /**
@@ -73,7 +83,7 @@ class Store {
         group = JSON.parseObject(jsonGroup, Customers.class);
         for (Customers.Order c:
              group.orderList) {
-            List<Delivery.Fruits> fruits = getAvailableFruits(new Date(), c.type);
+            List<Fruits> fruits = getAvailableFruits(new Date(), c.type);
             if (fruits.size() <= c.count) {
                 System.out.printf("Для замолення %s - %d %s не вистачає товару. Кількість на складі = %d\n" +
                                 "замовлення відхилено\n",
@@ -81,7 +91,7 @@ class Store {
                 continue;
             }
             int count = c.count;
-            for (Delivery.Fruits f:
+            for (Fruits f:
                  fruits) {
                 moneyBalance = moneyBalance.add(f.price);
                 fruitsList.remove(f);
@@ -109,18 +119,18 @@ class Store {
      * getAvailableFruits -
      * @return all fruit, with available using before date
      */
-    public List<Delivery.Fruits> getSpoiledFruits(Date date){
-        List<Delivery.Fruits> temp = new ArrayList<>();
-        for (Delivery.Fruits f:
+    public List<Fruits> getSpoiledFruits(Date date){
+        List<Fruits> temp = new ArrayList<>();
+        for (Fruits f:
                 fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.before(date)) temp.add(f);
         }
         return temp;
     }
-    public List<Delivery.Fruits> getSpoiledFruits(Date date, KindOfFruit type){
-        List<Delivery.Fruits> temp = new ArrayList<>();
-        for (Delivery.Fruits f:
+    public List<Fruits> getSpoiledFruits(Date date, KindOfFruit type){
+        List<Fruits> temp = new ArrayList<>();
+        for (Fruits f:
                 fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.before(date) & f.type == type) temp.add(f);
@@ -128,18 +138,18 @@ class Store {
         return temp;
     }
 
-    public List<Delivery.Fruits> getAvailableFruits(Date date){
-        List<Delivery.Fruits> temp = new ArrayList<>();
-        for (Delivery.Fruits f:
+    public List<Fruits> getAvailableFruits(Date date){
+        List<Fruits> temp = new ArrayList<>();
+        for (Fruits f:
              fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.after(date)) temp.add(f);
         }
         return temp;
     }
-    public List<Delivery.Fruits> getAvailableFruits(Date date, KindOfFruit type){
-        List<Delivery.Fruits> temp = new ArrayList<>();
-        for (Delivery.Fruits f:
+    public List<Fruits> getAvailableFruits(Date date, KindOfFruit type){
+        List<Fruits> temp = new ArrayList<>();
+        for (Fruits f:
              fruitsList) {
             Date a = new Date(f.date.getTime() + (24*60*60*1000*f.shelfLife));
             if (a.after(date) & f.type == type) temp.add(f);
@@ -147,20 +157,21 @@ class Store {
         return temp;
     }
 
-    public List<Delivery.Fruits> getAddedFruits(Date date){
-        List<Delivery.Fruits> temp = new ArrayList<>();
-        for (Delivery.Fruits f:
+    public List<Fruits> getAddedFruits(Date date){
+        List<Fruits> temp = new ArrayList<>();
+        for (Fruits f:
              fruitsList) {
             if (f.date.getDate() == date.getDate())
                 temp.add(f);
         }
         return temp;
     }
-    public List<Delivery.Fruits> getAddedFruits(Date date, Delivery.Fruits fruits){
-        List<Delivery.Fruits> temp = new ArrayList<>();
-        for (Delivery.Fruits f:
+
+    public List<Fruits> getAddedFruits(Date date, KindOfFruit type){
+        List<Fruits> temp = new ArrayList<>();
+        for (Fruits f:
              fruitsList) {
-            if (f.date.getDate() == date.getDate() & f.type == fruits.type)
+            if (f.date.getDate() == date.getDate() & f.type == type)
                 temp.add(f);
         }
         return temp;
@@ -171,7 +182,7 @@ class Store {
      * @param fruits
      */
 
-    public void addToStore(Delivery.Fruits fruits){
+    public void addToStore(Fruits fruits){
         fruitsList.add(fruits);
     }
 
@@ -179,7 +190,7 @@ class Store {
      * add fruits to Delivery
      * @param fruits
      */
-    void addFruitsToDelivery(Delivery.Fruits fruits){
+    void addFruitsToDelivery(Fruits fruits){
         delivery.addDelivery(fruits);
     }
 
@@ -209,32 +220,32 @@ class Store {
     }
 
 
-    private void saveToFile(File file, String string){
-        try {
-            FileOutputStream fos = new FileOutputStream(file);
-            byte[] byteString = string.getBytes();
-            fos.write(byteString);
-            fos.flush();
-            fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    private void copyBakFile(File file){
-        File bakFile = new File(file.getName() + ".bak");
-        try {
-            assert (bakFile.createNewFile());
-            Scanner scanner = new Scanner(new FileInputStream(file));
-            StringBuilder sb = new StringBuilder();
-            while (scanner.hasNext()) {
-                sb.append(scanner.nextLine());
-            }
-            saveToFile(bakFile, String.valueOf(sb));
-            scanner.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void saveToFile(File file, String string){
+//        try {
+//            FileOutputStream fos = new FileOutputStream(file);
+//            byte[] byteString = string.getBytes();
+//            fos.write(byteString);
+//            fos.flush();
+//            fos.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+//    private void copyBakFile(File file){
+//        File bakFile = new File(file.getName() + ".bak");
+//        try {
+//            assert (bakFile.createNewFile());
+//            Scanner scanner = new Scanner(new FileInputStream(file));
+//            StringBuilder sb = new StringBuilder();
+//            while (scanner.hasNext()) {
+//                sb.append(scanner.nextLine());
+//            }
+//            saveToFile(bakFile, String.valueOf(sb));
+//            scanner.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 }
 

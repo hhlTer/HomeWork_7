@@ -3,6 +3,7 @@ package homework7.shop;
 import com.alibaba.fastjson.JSON;
 import homework7.cucl.Customers;
 import homework7.cucl.Delivery;
+import homework7.cucl.Fruits;
 import homework7.cucl.KindOfFruit;
 
 import java.io.File;
@@ -16,22 +17,42 @@ import java.util.Random;
 
 public class Manager {
     public static void main(String[] args) throws FileNotFoundException {
-        fillAllFiles();
-
+//        testStore();
+        testCompany();
     }
-    static List<Delivery.Fruits> countOfAvailableFruit(File file, Date date, KindOfFruit type) throws FileNotFoundException{
+    static void testCompany(){
+        Companyes companyes = new Companyes();
+        companyes.addStore(new File("store1.dat"));
+        companyes.addStore(new File("store2.dat"));
+//------------------------------------------------------------------
+        try {
+            companyes.saveToFile("company.dat");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+//------------------------------------------------------------------
+        Store store = companyes.getStore(0);
+        Date date = new Date();
+        date = new Date(date.getTime() + (24*60*60*1000*10));
+        System.out.println(store.getSpoiledFruits(date, KindOfFruit.APPLE).size());
+//------------------------------------------------------------------
+        System.out.println(companyes.getCompanyBalance());
+//------------------------------------------------------------------
+        System.out.println(companyes.getSpoiledFruits(date, KindOfFruit.APPLE).size());
+    }
+    static List<Fruits> countOfAvailableFruit(File file, Date date, KindOfFruit type) throws FileNotFoundException{
         Store store = new Store();
         store.load(file.getName());
 //        Date date = new Date();
 //        date = new Date(date.getTime() + (24*60*60*1000*50));
-        List<Delivery.Fruits> list = store.getAvailableFruits(date, KindOfFruit.APPLE);
+        List<Fruits> list = store.getAvailableFruits(date, KindOfFruit.APPLE);
         return list;
     }
 
-    /** fillAllFiles():
+    /** testStore():
      ** create and fill:
      *      store1.dat
-     *      store2.dat : Contain JSON with data of shop - ArrayList<Fruits> + moneyBalance
+     *      store2.dat : Contain JSON with data of shop - ArrayList<Fruits> + moneyBalances
      *
      *      randomDelivery1.dat : for store1
      *      randomDelivery2.dat : for store2. Contain JSON with deliver of fruit - ArrayList<Fruits>
@@ -48,7 +69,7 @@ public class Manager {
      *
      * @throws FileNotFoundException
      */
-    static void fillAllFiles() throws FileNotFoundException{
+    static void testStore() throws FileNotFoundException{
 //============================================================
         Store store1 = new Store();
         Store store2 = new Store();
@@ -120,10 +141,10 @@ public class Manager {
 
     private static Delivery newDelivery(){
         Delivery delivery = new Delivery();
-        Delivery.Fruits fruits;
+        Fruits fruits;
         Random random = new Random();
         for (int i = 0; i < 200; i++) {
-            fruits = new Delivery.Fruits();
+            fruits = new Fruits();
             fruits.date = new Date();
             fruits.type = KindOfFruit.values()[random.nextInt(KindOfFruit.values().length)];
             fruits.shelfLife = random.nextInt(20);
